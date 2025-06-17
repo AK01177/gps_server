@@ -1,0 +1,81 @@
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+require('dotenv').config();
+
+const app = express();
+const PORT = process.env.PORT || 5000;
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+
+// MongoDB connection
+mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/safetrack', {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+});
+
+// Device Schema
+const deviceSchema = new mongoose.Schema({
+  deviceId: { type: String, unique: true, required: true },
+  name: { type: String, required: true },
+  lastLocation: {
+    latitude: Number,
+    longitude: Number,
+    timestamp: { type: Date, default: Date.now }
+  }
+});
+
+const Device = mongoose.model('Device', deviceSchema);
+
+// Routes
+
+// Update device location
+app.post('/api/location/update', async (req, res) => {
+  try {
+    const { deviceId, name, latitude, longitude } = req.body;
+    
+    if (!deviceId || !name || !latitude || !longitude) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    const device = await Device.findOneAndUpdate(
+      { deviceId },
+      {
+        deviceId,
+        name,
+        lastLocation: {
+          latitude,
+          longitude,
+          timestamp: new Date()
+        }
+      },
+      { upsert: true, new: true }
+    );
+
+    res.json({ success: true, device });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get device location
+app.get('/api/location/:deviceId', async (req, res) => {
+  try {
+    const { deviceId } = req.params;
+    const device = await Device.findOne({ deviceId });
+    
+    if (!device) {
+      return res.status(404).json({ error: 'Device not found' });
+    }
+
+    res.json(device);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
