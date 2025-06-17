@@ -31,6 +31,18 @@ const Device = mongoose.model('Device', deviceSchema);
 
 // Routes
 
+// Home route for testing
+app.get('/', (req, res) => {
+  res.json({ 
+    message: "SafeTrack GPS API is running!", 
+    status: "active",
+    endpoints: {
+      "POST /api/location/update": "Update device location",
+      "GET /api/location/:deviceId": "Get device location"
+    }
+  });
+});
+
 // Update device location
 app.post('/api/location/update', async (req, res) => {
   try {
