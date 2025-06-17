@@ -91,3 +91,29 @@ app.get('/api/location/:deviceId', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+// Admin login route
+app.post('/api/admin/login', (req, res) => {
+  const { email, password } = req.body;
+
+  if (
+    email === process.env.ADMIN_EMAIL &&
+    password === process.env.ADMIN_PASSWORD
+  ) {
+    return res.json({ success: true });
+  }
+
+  res.status(401).json({ success: false, message: 'Invalid credentials' });
+});
+
+// Admin fetch all devices
+app.get('/api/admin/devices', async (req, res) => {
+  const auth = req.headers.authorization;
+
+  if (auth !== process.env.ADMIN_PASSWORD) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+
+  const devices = await Device.find();
+  res.json(devices);
+});
